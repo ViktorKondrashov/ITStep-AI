@@ -23,7 +23,7 @@ darken_hsv[:, :, 2] = new_value
 
 darken_new = cv2.cvtColor(darken_hsv, cv2.COLOR_HSV2BGR)
 
-cv2.imshow('contrast', darken_new)
+cv2.imshow('contrast_equalizeHist', darken_new)
 
 darken_hsv1 = cv2.cvtColor(darken_orig, cv2.COLOR_BGR2HSV)
 
@@ -38,7 +38,7 @@ darken_hsv1[:, :, 2] = new_value1
 
 darken_new1 = cv2.cvtColor(darken_hsv1, cv2.COLOR_HSV2BGR)
 
-cv2.imshow('contrast1', darken_new1)
+cv2.imshow('contrast_150%', darken_new1)
 
 cv2.waitKey(0)
 
