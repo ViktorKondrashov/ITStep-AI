@@ -178,3 +178,68 @@ res4 = cv2.adaptiveThreshold(
 cv2.imshow('GAUSS1', res4)
 
 cv2.waitKey(0)
+
+# Завдання 2
+# Відкрийте зображення data/lesson3/sudoku.jpg. Проведіть для нього бінарізацію, а саме
+#  гаусове розмиття
+#  адаптивна бінарізація
+#  NLMean
+# Самостійно підберіть параметри, збережіть результат. Порівняйте результати для гаусової та середньої адаптивної бінарізації
+# Практичне завдання
+
+img = cv2.imread(r'C:\ITSTEP\ITStep-AI\data\lesson3\sudoku.jpg', cv2.IMREAD_GRAYSCALE)
+
+cv2.imshow("original", img)
+
+
+res = cv2.GaussianBlur(
+    img,
+    (3, 3),   # розмір ядра
+         2       # чим більше тим більше розвиття
+ )
+
+
+res1 = cv2.adaptiveThreshold(
+     img,
+     255,  #  інтенчивність для білого кольору
+     cv2.ADAPTIVE_THRESH_MEAN_C,   # фурмула згортки(гаус)
+     cv2.THRESH_BINARY,    # це не чіпаємо
+     11,    # розмір ядра для згортки
+     2           # наскільки чутливою має бути бінарізація
+ )
+
+res2 = cv2.adaptiveThreshold(
+     res,
+     255,  #  інтенчивність для білого кольору
+     cv2.ADAPTIVE_THRESH_MEAN_C,   # фурмула згортки(гаус)
+     cv2.THRESH_BINARY,    # це не чіпаємо
+     7,    # розмір ядра для згортки
+     3          # наскільки чутливою має бути бінарізація
+ )
+
+
+# # двосторонній фільтр
+res3 = cv2.bilateralFilter(
+     img,
+     d=3,  # розмір ядра
+     sigmaColor=75,   # наскільки зберігати різкість кольору
+     sigmaSpace=75,   # те ж саме що й в GaussianBlur
+)
+
+res4 = cv2.adaptiveThreshold(
+     res3,
+     255,  #  інтенчивність для білого кольору
+     cv2.ADAPTIVE_THRESH_MEAN_C,   # фурмула згортки(гаус)
+     cv2.THRESH_BINARY,    # це не чіпаємо
+     5,    # розмір ядра для згортки
+     3          # наскільки чутливою має бути бінарізація
+ )
+
+
+
+cv2.imshow("BIl_BIN", res4)
+cv2.imshow("BIl", res3)
+cv2.imshow('ADAPT_GAUS', res2)
+cv2.imshow('ADAPT_ORIG', res1)
+cv2.imshow("GAUS", res)
+cv2.waitKey(0)
