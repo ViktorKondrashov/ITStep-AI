@@ -141,7 +141,7 @@ cv2.imshow('GAUSS', res1)
 res2 = cv2.GaussianBlur(
     img,
     (3, 3),   # розмір ядра
-    2       # чим більше тим більше розвиття
+    2       # чим більше тим більше розмиття
 )
 
 cv2.imshow('GAUSS_blur', res2)
