@@ -95,58 +95,100 @@ model = ultralytics.YOLO('yolo11s-pose.pt')
 # знаходиться найближче, тобто в якої найбільша площа
 # рамки(можете потренуватись на 200-му кадрі)
 
-# orig_video = cv2.VideoCapture('data/lesson_pose/sitting.mp4')
-# move_down = True
-# counter = 0
-#
-# while True:
-#     success, img = orig_video.read()
-#
-#     if not success:
-#         break
-#
-#     model_results = model.predict(img)
-#     model_result = model_results[0]
-#     keypoints = model_result.keypoints[0]
-#     xy = keypoints.xy
-#     print(xy.shape)
-#
-#     left_hand = xy[0, 9]
-#     y_left_hand = left_hand[1]
-#
-#     right_hand = xy[0, 10]
-#     y_right_hand = right_hand[1]
-#
-#     left_knee = xy[0, 13]
-#     y_left_knee = left_knee[1]
-#
-#     right_knee = xy[0, 14]
-#     y_right_knee = right_knee[1]
-#
-#     # человек присел
-#     if y_left_hand > y_left_knee and move_down:
-#         move_down = False
-#         counter += 0.5
-#
-#     if y_left_hand < y_left_knee and not move_down:
-#         move_down = True
-#         counter += 0.5
-#
-#     cv2.putText(
-#         img,                  # зображення
-#         f'Counter: {counter}',    # текст
-#         (20, 20),     # верхний левый угол
-#         cv2.FONT_HERSHEY_SIMPLEX,    # шрифт
-#         0.8,          # розмір шрифту(відсоток до стандарту)
-#         (255, 255, 255),      # колір у bgr(тут чорний)
-#         2           # товщина ліній
-#
-#     )
-#
-#     cv2.imshow("img", img)
-#     if cv2.waitKey(1) & 0xFF == ord('q'):
-#         break
+orig_video = cv2.VideoCapture('data/lesson_pose/sitting.mp4')
+move_down = True
+counter = 0
 
+# #шукаэмо 200 кадр
+# for i in range(200):
+#     success, img = orig_video.read()
+
+# model_results = model.predict(img, verbose=False)
+# model_result = model_results[0]
+
+def get_max_index(model_result):
+
+    xy_boxes = model_result.boxes.xywh
+    # print(xy_boxes)
+    # print(xy_boxes.shape)
+
+    # дістаємо ширину і висоту кожної рамки (людини)
+    width = xy_boxes[:,2]
+    height = xy_boxes[:,3]
+
+    # print(width)
+    # print(height)
+
+    area = width * height
+    # print(area)
+
+    area = area.numpy()
+    max_index = np.argmax(area)
+
+    return max_index
+
+
+# plot_img = model_result.plot()
+# cv2.imshow('plot_img', plot_img)
+#
+#
+# cv2.waitKey(0)
+
+while True:
+    success, img = orig_video.read()
+
+    if not success:
+        break
+
+    model_results = model.predict(img, verbose=False)
+    model_result = model_results[0]
+    max_index = get_max_index(model_result)
+
+    # plot_img = model_result.plot()
+    # cv2.imshow('plot_img', plot_img)
+
+    keypoints = model_result.keypoints[max_index]
+    xy = keypoints.xy
+    # print(xy.shape)
+
+    left_hand = xy[0, 9]
+    y_left_hand = left_hand[1]
+
+    right_hand = xy[0, 10]
+    y_right_hand = right_hand[1]
+
+    left_knee = xy[0, 13]
+    y_left_knee = left_knee[1]
+
+    right_knee = xy[0, 14]
+    y_right_knee = right_knee[1]
+
+    # (беремо коліно, ЯКЕ ВИЩЕ)
+    y_knee_min = min(y_left_knee, y_right_knee)
+
+    # человек присел
+    if y_left_hand > y_knee_min and move_down:
+        move_down = False
+        counter += 0.5
+
+    if y_left_hand < y_knee_min and not move_down:
+        move_down = True
+        counter += 0.5
+
+    cv2.putText(
+        img,                  # зображення
+        f'Counter: {counter}, Max_index: {max_index}',    # текст
+        (20, 20),     # верхний левый угол
+        cv2.FONT_HERSHEY_SIMPLEX,    # шрифт
+        0.8,          # розмір шрифту(відсоток до стандарту)
+        (255, 255, 255),      # колір у bgr(тут чорний)
+        2           # товщина ліній
+
+    )
+
+    cv2.imshow("img", img)
+    if cv2.waitKey(1) & 0xFF == ord('q'):
+        break
 
 # Завдання 2
 # Відкрийте відео data/lesson_pose/hopak.mp4
