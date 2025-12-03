@@ -1,0 +1,200 @@
+import cv2
+import ultralytics
+
+model = ultralytics.YOLO('yolo11s-pose.pt')
+
+# img = cv2.imread('data/lesson_pose/human.jpg')
+#
+# results = model.predict(img)
+# result = results[0]
+#
+# res_img = result.plot()
+#
+# # ключові точки
+# keypoints = result.keypoints
+#
+# # ймовірності для кожної точки
+# conf = keypoints.conf
+#
+# # print(conf)
+# # print(conf.shape)  # (кількість людей, кількість точок(17))
+#
+# # координати xy
+# xy = keypoints.xy
+#
+# # print(xy)
+# # print(xy.shape) # (кількість людей, кількість точок(17), координати)
+#
+# # координати правої долоні
+# xy_right_hand = xy[0, 10]  # людина 0, точка 10
+# xy_right_hand = xy_right_hand.cpu()  # відключити від графічного процесора
+# xy_right_hand = xy_right_hand.numpy()  # перевести у звичайний масив
+#
+# x, y = xy_right_hand
+#
+# # треба перевести в int
+# x = int(x)
+# y = int(y)
+#
+# # print(x)
+# # print(y)
+#
+# # намалювати коло на зображення
+# cv2.circle(
+#     img,   # зображення де малювати коло
+#     (x, y),     # координати центру
+#     20,         # радіус кола
+#     (255, 0, 0),  # колір у bgr(тут синій)
+#     -1                 # товщина лінії(-1 означає повністю заповнене коло)
+# )
+#
+# # накласти текст на зображення
+# cv2.putText(
+#     img,                  # зображення
+#     'Right hand',    # текст
+#     (x+30, y-30),     # нижня ліва точка початку тексту
+#     cv2.FONT_HERSHEY_SIMPLEX,    # шрифт
+#     0.8,          # розмір шрифту(відсоток до стандарту)
+#     (0, 0, 0),      # колір у bgr(тут чорний)
+#     2           # товщина ліній
+#
+# )
+#
+# xy = xy.cpu().numpy()
+# # ліва стопа
+# x_left_foot, y_left_foot = xy[0, 15]
+#
+# # праве плече
+# x_right_shoulder, y_right_shoulder = xy[0, 6]
+#
+# # чи справді праве плече знаходиться правіше за ліву стопу
+# if x_right_shoulder > x_left_foot:
+#     print("праве плече знаходиться правіше за ліву стопу")
+# else:
+#     print("праве плече знаходиться лівіше за ліву стопу")
+#
+# # чи справді праве плече знаходиться вище за ліву стопу
+# if y_right_shoulder < y_left_foot:
+#     print("праве плече знаходиться вище за ліву стопу")
+# else:
+#     print("праве плече знаходиться нижче за ліву стопу")
+#
+# cv2.imshow('original', img)
+# cv2.imshow('result', res_img)
+# cv2.waitKey(0)
+
+
+# Завдання 1
+# =============================================================================
+# Відкрийте відео data/lesson_pose/sitting.mp4
+# Ваша задача рахувати кількість присідань.
+# Отримайте перший кадр та виділіть основні точки.
+# Отримайте координати однієї з долонь та лівого коліна.
+# Вважайте що людина присіла, коли її рука опустилась нижче коліна, і піднялась коли її рука опинилась вище коліна.
+# Оскільки на відео є декілька людей то обирайте ту, яка
+# знаходиться найближче, тобто в якої найбільша площа
+# рамки(можете потренуватись на 200-му кадрі)
+
+# orig_video = cv2.VideoCapture('data/lesson_pose/sitting.mp4')
+# move_down = True
+# counter = 0
+#
+# while True:
+#     success, img = orig_video.read()
+#
+#     if not success:
+#         break
+#
+#     model_results = model.predict(img)
+#     model_result = model_results[0]
+#     keypoints = model_result.keypoints[0]
+#     xy = keypoints.xy
+#     print(xy.shape)
+#
+#     left_hand = xy[0, 9]
+#     y_left_hand = left_hand[1]
+#
+#     right_hand = xy[0, 10]
+#     y_right_hand = right_hand[1]
+#
+#     left_knee = xy[0, 13]
+#     y_left_knee = left_knee[1]
+#
+#     right_knee = xy[0, 14]
+#     y_right_knee = right_knee[1]
+#
+#     # человек присел
+#     if y_left_hand > y_left_knee and move_down:
+#         move_down = False
+#         counter += 0.5
+#
+#     if y_left_hand < y_left_knee and not move_down:
+#         move_down = True
+#         counter += 0.5
+#
+#     cv2.putText(
+#         img,                  # зображення
+#         f'Counter: {counter}',    # текст
+#         (20, 20),     # верхний левый угол
+#         cv2.FONT_HERSHEY_SIMPLEX,    # шрифт
+#         0.8,          # розмір шрифту(відсоток до стандарту)
+#         (255, 255, 255),      # колір у bgr(тут чорний)
+#         2           # товщина ліній
+#
+#     )
+#
+#     cv2.imshow("img", img)
+#     if cv2.waitKey(1) & 0xFF == ord('q'):
+#         break
+
+
+# Завдання 2
+# Відкрийте відео data/lesson_pose/hopak.mp4
+# Покажіть відео добавляючи на кожен кадр назву руху
+
+orig_video = cv2.VideoCapture('data/lesson_pose/hopak.mp4')
+
+while True:
+    success, img = orig_video.read()
+
+    if not success:
+        break
+
+    model_results = model.predict(img)
+    model_result = model_results[0]
+    keypoints = model_result.keypoints[0]
+    xy = keypoints.xy
+    print(xy.shape)
+
+    left_hand = xy[0, 9]
+    x_left_hand = left_hand[0]
+
+    right_hand = xy[0, 10]
+    x_right_hand = right_hand[0]
+
+    left_elbow = xy[0, 7]
+    x_left_elbow = left_elbow[0]
+
+    right_elbow = xy[0, 8]
+    x_right_elbow = right_elbow[0]
+
+    if (x_right_hand < x_right_elbow and x_left_elbow < x_left_hand) or (x_right_hand > x_right_elbow and x_left_elbow > x_left_hand):
+        type_move ="hands_out"
+    else:
+        type_move ="unknown"
+
+
+    cv2.putText(
+        img,                  # зображення
+        f'Counter: {type_move}',    # текст
+        (20, 20),     # верхний левый угол
+        cv2.FONT_HERSHEY_SIMPLEX,    # шрифт
+        0.8,          # розмір шрифту(відсоток до стандарту)
+        (255, 255, 255),      # колір у bgr(тут чорний)
+        2           # товщина ліній
+
+    )
+
+    cv2.imshow("img", img)
+    if cv2.waitKey(1) & 0xFF == ord('q'):
+        break
