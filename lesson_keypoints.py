@@ -1,4 +1,5 @@
 import cv2
+import numpy as np
 import ultralytics
 
 model = ultralytics.YOLO('yolo11s-pose.pt')
