@@ -93,13 +93,13 @@ response = llm.invoke(command_story + user_input)
 print(response)
 
 # # create a model
-llm = GoogleGenerativeAI(
-    model='gemini-2.5-flash-lite', # model name
-    api_key=api_key,
-    top_k=1, # choose random next word from 10 with greater probability
-    top_p=0.8, # leave words, which probability sum not greater 80% and choose avg
-    temperature=2, # the higher the temperature - the more similar the percentages become
-)
+# llm = GoogleGenerativeAI(
+#     model='gemini-2.5-flash-lite', # model name
+#     api_key=api_key,
+#     top_k=1, # choose random next word from 10 with greater probability
+#     top_p=0.8, # leave words, which probability sum not greater 80% and choose avg
+#     temperature=2, # the higher the temperature - the more similar the percentages become
+# )
 
 # start model
 # ● відповідь на питання у вигляді одного слова(наприклад яка столиця Франції?)
@@ -143,22 +143,22 @@ llm = GoogleGenerativeAI(
 # Human: massage5
 # AI:
 
-llm = GoogleGenerativeAI(
-    model='gemini-2.5-flash-lite',
-    api_key=api_key,
-    temperature=1
-)
-
-
-history = 'Відповідай як Джекі Чан'
-
-while True:
-    user_input = input('Ваше питання - ')
-    history += f'\n Human: {user_input}'
-
-
-    response = llm.invoke(history)
-    history += f'\n AI: {response}'
-    print(response)
+# llm = GoogleGenerativeAI(
+#     model='gemini-2.5-flash-lite',
+#     api_key=api_key,
+#     temperature=1
+# )
+#
+#
+# history = 'Відповідай як Джекі Чан'
+#
+# while True:
+#     user_input = input('Ваше питання - ')
+#     history += f'\n Human: {user_input}'
+#
+#
+#     response = llm.invoke(history)
+#     history += f'\n AI: {response}'
+#     print(response)
 
 
