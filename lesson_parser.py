@@ -209,6 +209,91 @@ llm = GoogleGenerativeAI(
 #     print(book)
 
 
+# Завдання 2
+# Напишіть модель для генерації листа:
+# Перший ланцюг отримує короткий опис листа та генерує основний зміст
+# Другий ланцюг отримує основний зміст та стиль листа(формальний, неформальний, тощо) та генерує лист
+
+# завантажити api ключі з папки .env
+dotenv.load_dotenv()
+
+# отримати сам ключ
+api_key = os.getenv('GEMINI_API_KEY')
+
+# створити llm
+llm = GoogleGenerativeAI(
+    model='gemini-2.5-flash-lite',  # назва моделі
+    api_key=api_key,  # ваша API
+)
+
+
+def get_content_chain():
+    # структура відповіді
+    class ParserResult(BaseModel):
+        content: str = Field(description="Здесь текст сообщения по данным")
+
+    # # створення парсера
+    parser = PydanticOutputParser(pydantic_object=ParserResult)
+    instructions = parser.get_format_instructions()
+
+    # промпт
+    prompt = PromptTemplate.from_template(
+        """
+        Ты - помощник по составлению писем. Тебе нужно составить текст по описанию, которое напишет пользователь
+
+        #Сообщение от пользователя
+        {user_text}
+
+        #ИНСТРУКЦИИ
+        {instructions}
+
+        """,
+        partial_variables={"instructions": instructions}
+    )
+
+    chain = prompt | llm | parser
+
+    return chain
+
+
+def get_letter_chain():
+    # промпт
+    prompt = PromptTemplate.from_template(
+        """
+        Ты - помощник по составлению писем. Тебе нужно изменить содержание сообщения под стиль
+
+        #СТИЛЬ СООБЩЕНИЯ
+        {user_style}
+
+        #СОДЕРЖАНИЕ
+        {content}
+        """
+    )
+
+    chain = prompt | llm
+
+    return chain
+
+
+user_text = input("Опишите содержание: ")
+user_style = input("Опишите cтиль содержания: ")
+
+content_chain = get_content_chain()
+
+content_response = content_chain.invoke({
+    "user_text": user_text
+})
+
+letter_chain = get_letter_chain()
+
+letter_response = letter_chain.invoke({
+    "user_style": user_style,
+    "content": content_response.content
+})
+
+print(letter_response)
+
+
 # Завдання 3
 # Напишіть модель для генерації резюме:
 #  Перший ланцюг отримує опис вакансії та повертає основні навички, які необхідні
