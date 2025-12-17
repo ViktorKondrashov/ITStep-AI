@@ -6,8 +6,14 @@ from langchain_core.messages import (
     HumanMessage,
     AIMessage,
     SystemMessage,
-    trim_messages
+    trim_messages,
+    BaseMessage
 )
+
+from typing import List, Union
+from pydantic import BaseModel, Field
+from langchain.output_parsers import PydanticOutputParser
+from langchain.prompts import  PromptTemplate
 
 
 # завантаження апі ключа
@@ -207,10 +213,57 @@ llm = ChatGoogleGenerativeAI(
 
     # print()
 
-    # Завдання    2
-    # Напишіть    чат    бота, який    дає    відповіді    на    питання    стосовно    умов    повернення    товару.
-    # Якщо    користувач    запитує    щось    інше, то    відповідати    що    немає    інформації.
-    # Застосуйте    обмеження    історії(можна    десь    5    повідомлень)
+
+# Завдання 1
+# ==================================================================================================================
+# Напишіть чат бота, який спілкується у стилі різних персонажів книг\фільмів або відомих людей.
+# Ким саме бути чат бот вирішує з повідомлення від користувача.
+# Якщо персонаж або книга невідомі, то відповісти що невідома інформація та запропонувати декілька відомих прикладів на вибір
+
+messages: List[BaseMessage] = [
+    SystemMessage("""
+    Ты должен стать тем, кем скажет пользователь. 
+    Это может быть известный персонаж фильмов или книг. 
+    Если это неизвестный персонаж или неизвестный фильм или книга - скажи, 
+    что незнаешь этого персонажа и предложи пользователю его вариант. 
+    Сообщения должны быть без комментариев, только фразы персонажа.
+    Сообщения должны быть достаточно большими 1-3 предложения.
+
+    """)
+]
+
+trimmer = trim_messages(
+    strategy='last',  # залишати останні повідомлення
+
+    token_counter=len,  # рахуємо кількість повідомлень
+    max_tokens=15,  # залишати максимум 5 повідомлення(System, AI, Human)
+
+    start_on='human',  # історія завжди починатиметься з HumanMessage
+    end_on='human',  # історія завжди закінчуватиметься з HumanMessage
+    include_system=True  # SystemMessage не чіпати
+)
+
+chain = trimmer | llm
+
+while True:
+    user_query = input("Ваше сообщение: ")
+    messages.append(HumanMessage(user_query))
+
+    if user_query == '':
+        break
+
+    response = chain.invoke(messages)
+    messages.append(response)
+
+    for m in messages:
+        print(repr(m))
+
+    print(f"AI: {response.content}")
+
+# Завдання    2
+# Напишіть    чат    бота, який    дає    відповіді    на    питання    стосовно    умов    повернення    товару.
+# Якщо    користувач    запитує    щось    інше, то    відповідати    що    немає    інформації.
+# Застосуйте    обмеження    історії(можна    десь    5    повідомлень)
 
 with open(r'data/lesson9/return_policy.txt','r',encoding='utf-8') as file:
     return_policy = file.read()
@@ -253,5 +306,68 @@ while True:
 
     messages.append(response)
 
+# Завдання 3
+# ==================================================================================================================
+# Напишіть чат бота, який допомагає у вивченні англійської мови з наступним функціоналом:
+# якщо користувач просить перекласти слово або фразу то дається переклад слова та приклад використання в реченні
+# якщо користувач просить перекласти речення, то
+# дається переклад самого речення, а також пояснення
+# граматики, наприклад структура there is\are, питання в
+# різних часових формах, тощо.
+# Приклади реалізуйте як HumanMessage та AIMessage
+messages: List[BaseMessage] = [
+    SystemMessage("""
+    Ти вчитель Англійскої мови Native speaker level
+
+    ###ОСНОВНІ ІНСТРУКЦІЇ
+    * якщо користувач просить перекласти слово або фразу то дається переклад слова та приклад використання в реченні
+    * якщо користувач просить перекласти речення, то дається переклад самого речення, а також пояснення граматики, 
+    наприклад структура there is/are, питання в різних часових формах, тощо.
+    *Якщо юзер не просить протилежного то  відповідь користувачу  має бути повністю локанічна та цікава але не дуже довга 
+    """)
+]
+
+trimmer = trim_messages(
+    strategy='last',  # залишати останні повідомлення
+    token_counter=len,  # рахуємо кількість повідомлень
+    max_tokens=15,  # залишати максимум 5 повідомлення(System, AI, Human)
+    start_on='human',  # історія завжди починатиметься з HumanMessage
+    end_on='human',  # історія завжди закінчуватиметься з HumanMessage
+    include_system=True  # SystemMessage не чіпати
+)
+
+
+class AnswerSchema(BaseModel):
+    english_words: List[str] = Field(description='Список Англійских слів')
+
+
+parser = PydanticOutputParser(pydantic_object=AnswerSchema)
+instructions = parser.get_format_instructions()
+promt = PromptTemplate.from_template("""
+--ти парсер англійских слів з повідомлення  
+
+###ПОВІДОМЛЕННЯ
+{response} 
+
+###ІНСТРУКЦІЯ
+{instructions}
+
+
+""")
+
+chain = promt | llm | parser
+
+while True:
+    user_question = input('введіть ваш запрос: ')
+    messages.append(HumanMessage(user_question))
+
+    trimmer.invoke(messages)
+
+    response = llm.invoke(messages)
+    messages.append(response)
+    eng_words = chain.invoke({"instructions": instructions, "response": response.content})
+
+    print(response.content)
+    print(eng_words)
 
 
