@@ -38,9 +38,6 @@ import streamlit as st
 
 # ЧАТ-БОТ
 
-import os
-import dotenv
-
 from langchain_google_genai import ChatGoogleGenerativeAI
 from langchain_core.messages import (
     HumanMessage,
@@ -90,5 +87,22 @@ if user_query:
     # добавляємо до історії повідомлень
     st.session_state['history'].append(response)
 
-    # вивести відповідь
-    st.markdown(f"AI: {response.content}")
+
+# вивести всю історію спілкування
+for message in st.session_state['history']:
+    # пропускаємо SystemMessage
+    if isinstance(message, SystemMessage):
+        continue
+
+    # отримати вміст
+    text = message.content
+
+    # отримати роль
+    if isinstance(message, HumanMessage):
+        role = "human"
+    else:
+        role = 'ai'
+
+    # вивести повідомлення з підписом
+    with st.chat_message(role):
+        st.markdown(text)
