@@ -1,35 +1,3 @@
-# за замовчуванням щапускається нескіченний цикл
-# Сторінка сайту постійно оновлюється і відповідно
-# код нижче постіно запускається
-
-# # заголовок сайту
-# st.title("IT STEP ai")
-#
-# # звичайний текст
-# st.markdown("Звичайний текст. Можливо опис вашої програми")
-#
-# # отримати повідомлення від користувача
-# user_query = st.chat_input("Ваше повідомлення")
-#
-# # st.markdown(f"Ви ввели {user_query}")
-# #
-# # if user_query == 'Привіт':
-# #     st.markdown(f"Як справи")
-#
-#
-# # глобальна пам'ять в streamlit
-# # session_state -- dict з зміними
-#
-# if user_query == None:
-#     # це самий початок(користувач ще нічого не писав
-#     st.session_state['history'] = []
-#
-# # добавити user_query в історію
-# st.session_state['history'].append(user_query)
-#
-# st.markdown(f"Ви ввели {st.session_state['history']}")
-
-
 import streamlit as st
 
 import sqlite3
@@ -58,20 +26,23 @@ from langchain_community.agent_toolkits.sql.toolkit import SQLDatabaseToolkit
 
 
 
-def get_engine_for_chinook_db(url):
-    """Pull sql file, populate in-memory database, and create engine."""
+# def get_engine_for_chinook_db(url):
+#     """Pull sql file, populate in-memory database, and create engine."""
     # url = "https://raw.githubusercontent.com/lerocha/chinook-database/master/ChinookDatabase/DataSources/Chinook_Sqlite.sql"
-    response = requests.get(url)
-    sql_script = response.text
+    # response = requests.get(url)
+    # sql_script = response.text
+    #
+    # connection = sqlite3.connect(":memory:", check_same_thread=False)
+    # connection.executescript(sql_script)
+    # return create_engine(
+    #     "sqlite://",
+    #     creator=lambda: connection,
+    #     poolclass=StaticPool,
+    #     connect_args={"check_same_thread": False},
+    # )
 
-    connection = sqlite3.connect(":memory:", check_same_thread=False)
-    connection.executescript(sql_script)
-    return create_engine(
-        "sqlite://",
-        creator=lambda: connection,
-        poolclass=StaticPool,
-        connect_args={"check_same_thread": False},
-    )
+    # return create_engine(url)
+
 
 # Load environment variables from .env
 load_dotenv()
@@ -87,7 +58,9 @@ DBNAME = os.getenv("dbname")
 DATABASE_URL = f"postgresql+psycopg2://{USER}:{PASSWORD}@{HOST}:{PORT}/{DBNAME}?sslmode=require"
 
 
-engine = get_engine_for_chinook_db(DATABASE_URL)
+# engine = get_engine_for_chinook_db(DATABASE_URL)
+
+engine = create_engine(DATABASE_URL)
 
 try:
     with engine.connect() as connection:
@@ -109,7 +82,7 @@ api_key = st.secrets.get("GEMINI_API_KEY")
 
 # створити llm
 llm = ChatGoogleGenerativeAI(
-    model='gemini-2.5-flash-lite',
+    model='gemini-3-flash',
     api_key=api_key,
 )
 
@@ -130,12 +103,25 @@ if user_query is None:
         # перше повідомлення з основними інструкціями(промпт)
         SystemMessage(
             """
-            Ти -- ввічливий чат бот, який працює с базою даних SQL. Твоя задача давити короткі та
-            чіткі відповіді на питання, а акож вносити необхідні зміни у базу. У тебе є доступ до інструментів
+            Ти -- ввічливий чат бот, який працює с базою даних SQL. Твоя задача давати короткі та
+            чіткі відповіді на питання, а також вносити необхідні зміни у базу. У тебе є доступ до інструментів
             для роботи з базою даних.
             """
         )
     ]
+
+#    You are an agent designed to interact with a SQL database.Given an input question,
+# create a syntactically correct postgresql query to run, then look at the results of the query and return the answer.
+# Unless the user specifies a specific number of examples they wish to obtain, always limit your query to at most 5 results.
+# You can order the results by a relevant column to return the most interesting examples in the database.
+# Never query for all the columns from a specific table, only ask for the relevant columns given the question.
+# You have access to tools for interacting with the database.Only use the below tools.
+# Only use the information returned by the below tools to construct your final answer.
+# You MUST double check your query before executing it. If you get an error while executing a query,
+#  rewrite the query and try again.DO NOT make any DML statements (INSERT, UPDATE, DELETE, DROP etc.) to the database.
+#  To start you should ALWAYS look at the tables in the database to see what you can query.
+#  Do NOT skip this step.Then you should query the schema of the most relevant tables.
+
 
 # якщо повідомлення введено, то дати відповідь від моделі
 if user_query:

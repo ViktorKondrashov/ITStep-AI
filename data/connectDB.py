@@ -1,3 +1,4 @@
+from langchain_community.utilities import SQLDatabase
 from sqlalchemy import create_engine
 # from sqlalchemy.pool import NullPool
 from dotenv import load_dotenv
@@ -28,3 +29,6 @@ try:
         print("Connection successful!")
 except Exception as e:
     print(f"Failed to connect: {e}")
+
+db = SQLDatabase(engine)
+print(db.dialect)
