@@ -1,34 +1,3 @@
-import streamlit as st
-
-import sqlite3
-
-import requests
-from langchain_community.utilities.sql_database import SQLDatabase
-from sqlalchemy import create_engine
-from sqlalchemy.pool import StaticPool
-
-
-def get_engine_for_chinook_db():
-    """Pull sql file, populate in-memory database, and create engine."""
-    url = "https://raw.githubusercontent.com/lerocha/chinook-database/master/ChinookDatabase/DataSources/Chinook_Sqlite.sql"
-    response = requests.get(url)
-    sql_script = response.text
-
-    connection = sqlite3.connect(":memory:", check_same_thread=False)
-    connection.executescript(sql_script)
-    return create_engine(
-        "sqlite://",
-        creator=lambda: connection,
-        poolclass=StaticPool,
-        connect_args={"check_same_thread": False},
-    )
-
-
-engine = get_engine_for_chinook_db()
-
-db = SQLDatabase(engine)
-
-
 # за замовчуванням щапускається нескіченний цикл
 # Сторінка сайту постійно оновлюється і відповідно
 # код нижче постіно запускається
@@ -60,10 +29,22 @@ db = SQLDatabase(engine)
 #
 # st.markdown(f"Ви ввели {st.session_state['history']}")
 
-# ЧАТ-БОТ
+
+import streamlit as st
+
+import sqlite3
+
+import requests
+from langchain_community.utilities.sql_database import SQLDatabase
+from sqlalchemy import create_engine
+from sqlalchemy.pool import StaticPool
 
 import os
 import dotenv
+
+from sqlalchemy import create_engine
+# from sqlalchemy.pool import NullPool
+from dotenv import load_dotenv
 
 from langchain_google_genai import ChatGoogleGenerativeAI
 from langgraph.prebuilt import create_react_agent
@@ -74,6 +55,51 @@ from langchain_core.messages import (
 )
 
 from langchain_community.agent_toolkits.sql.toolkit import SQLDatabaseToolkit
+
+
+
+def get_engine_for_chinook_db(url):
+    """Pull sql file, populate in-memory database, and create engine."""
+    # url = "https://raw.githubusercontent.com/lerocha/chinook-database/master/ChinookDatabase/DataSources/Chinook_Sqlite.sql"
+    response = requests.get(url)
+    sql_script = response.text
+
+    connection = sqlite3.connect(":memory:", check_same_thread=False)
+    connection.executescript(sql_script)
+    return create_engine(
+        "sqlite://",
+        creator=lambda: connection,
+        poolclass=StaticPool,
+        connect_args={"check_same_thread": False},
+    )
+
+# Load environment variables from .env
+load_dotenv()
+
+# Fetch variables
+USER = os.getenv("user")
+PASSWORD = os.getenv("password")
+HOST = os.getenv("host")
+PORT = os.getenv("port")
+DBNAME = os.getenv("dbname")
+
+# Construct the SQLAlchemy connection string
+DATABASE_URL = f"postgresql+psycopg2://{USER}:{PASSWORD}@{HOST}:{PORT}/{DBNAME}?sslmode=require"
+
+
+engine = get_engine_for_chinook_db(DATABASE_URL)
+
+try:
+    with engine.connect() as connection:
+        print("Connection successful!")
+except Exception as e:
+    print(f"Failed to connect: {e}")
+
+db = SQLDatabase(engine)
+
+
+# ЧАТ-БОТ
+
 
 # заголовок
 st.title("Final project hospital chat bot")
@@ -92,7 +118,7 @@ toolkit = SQLDatabaseToolkit(db=db, llm=llm)
 # створення агента
 agent = create_react_agent(
     model=llm,  # мовна модель
-    tools=[]
+    tools=toolkit.get_tools()
 )
 
 user_query = st.chat_input("Ваше повідомлення")

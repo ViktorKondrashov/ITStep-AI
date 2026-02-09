@@ -56,7 +56,7 @@ llm = ChatGoogleGenerativeAI(
 
 # модель для кодування текстів(embedding model)
 embeddings = GoogleGenerativeAIEmbeddings(
-    model="models/text-embedding-004",
+    model="models/gemini-embedding-001",
     google_api_key=gemini_api_key
 )
 
@@ -66,7 +66,7 @@ index_name = "hospital"  # назва бази даних
 if not pc.has_index(index_name):
     pc.create_index(
         name=index_name,
-        dimension=768,      # кількість чисел при кодування
+        dimension=3072,      # кількість чисел при кодування
         metric="cosine",    # формула для схожості
         spec=ServerlessSpec(
             cloud="aws",         # хмарний сервер(амазон)
