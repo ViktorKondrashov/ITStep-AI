@@ -1,5 +1,33 @@
 import streamlit as st
 
+import sqlite3
+
+import requests
+from langchain_community.utilities.sql_database import SQLDatabase
+from sqlalchemy import create_engine
+from sqlalchemy.pool import StaticPool
+
+
+def get_engine_for_chinook_db():
+    """Pull sql file, populate in-memory database, and create engine."""
+    url = "https://raw.githubusercontent.com/lerocha/chinook-database/master/ChinookDatabase/DataSources/Chinook_Sqlite.sql"
+    response = requests.get(url)
+    sql_script = response.text
+
+    connection = sqlite3.connect(":memory:", check_same_thread=False)
+    connection.executescript(sql_script)
+    return create_engine(
+        "sqlite://",
+        creator=lambda: connection,
+        poolclass=StaticPool,
+        connect_args={"check_same_thread": False},
+    )
+
+
+engine = get_engine_for_chinook_db()
+
+db = SQLDatabase(engine)
+
 
 # за замовчуванням щапускається нескіченний цикл
 # Сторінка сайту постійно оновлюється і відповідно
@@ -45,8 +73,10 @@ from langchain_core.messages import (
     SystemMessage,
 )
 
+from langchain_community.agent_toolkits.sql.toolkit import SQLDatabaseToolkit
+
 # заголовок
-st.title("ITStep chat bot")
+st.title("Final project hospital chat bot")
 
 # завантаження апі ключа за допомогою streamlit
 api_key = st.secrets.get("GEMINI_API_KEY")
@@ -56,6 +86,8 @@ llm = ChatGoogleGenerativeAI(
     model='gemini-2.5-flash-lite',
     api_key=api_key,
 )
+
+toolkit = SQLDatabaseToolkit(db=db, llm=llm)
 
 # створення агента
 agent = create_react_agent(
