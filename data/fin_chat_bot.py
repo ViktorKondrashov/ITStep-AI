@@ -68,7 +68,7 @@ api_key = st.secrets.get("GEMINI_API_KEY")
 
 # створити llm
 llm = ChatGoogleGenerativeAI(
-    model='gemini-2.5-flash-lite',
+    model='gemini-2.5-flash',
     api_key=api_key,
 )
 
@@ -122,10 +122,12 @@ def search_doc(user_query: str) -> List[Document]:
     return result_docs
 
 
+listtools.append(search_doc)
+
 # створення агента
 agent = create_react_agent(
     model=llm,  # мовна модель
-    tools=toolkit.get_tools()
+    tools=listtools
 )
 
 user_query = st.chat_input("Ваше повідомлення")
@@ -137,9 +139,13 @@ if user_query is None:
         # перше повідомлення з основними інструкціями(промпт)
         SystemMessage(
             """
-            Ти -- ввічливий чат бот, який працює с базою даних SQL. Твоя задача давати короткі та
-            чіткі відповіді на питання. У тебе є доступ до інструментів
-            для роботи з базою даних. Нижче інструкція для роботи з нею.
+            Ти -- ввічливий чат бот, який працює с документами та базою даних SQL. Твоя задача давати короткі та
+            чіткі відповіді на питання. Для роботи с документами у тебе є доступ до такого інструмента:
+            
+            * search_doc
+            
+            Також в тебе є інструменти для роботи з базою даних. Нижче інструкція для роботи з нею.
+            
                You are an agent designed to interact with a SQL database.Given an input question,
             create a syntactically correct postgresql query to run, then look at the results of the query and return the answer.
             Unless the user specifies a specific number of examples they wish to obtain, always limit your query to at most 5 results.

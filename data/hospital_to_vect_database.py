@@ -84,7 +84,7 @@ from langchain_text_splitters import RecursiveCharacterTextSplitter
 
 text_splitter = RecursiveCharacterTextSplitter(
     # Set the chunk size to very small. These settings are for illustrative purposes only.
-    # chunk_size=500,
+    chunk_size=1000,
     # Sets the number of overlapping characters between chunks.
     chunk_overlap=50,
     # Specifies a function to calculate the length of the string.
