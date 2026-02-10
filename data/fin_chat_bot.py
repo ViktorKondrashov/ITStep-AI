@@ -1,6 +1,6 @@
-import streamlit as st
+from typing import List
 
-import sqlite3
+import streamlit as st
 
 import requests
 from langchain_community.utilities.sql_database import SQLDatabase
@@ -24,28 +24,17 @@ from langchain_core.messages import (
 
 from langchain_community.agent_toolkits.sql.toolkit import SQLDatabaseToolkit
 
+from langchain_google_genai import GoogleGenerativeAIEmbeddings
+from pinecone import Pinecone, ServerlessSpec
+from langchain_pinecone import PineconeVectorStore
+from langchain_core.documents import Document
 
-
-# def get_engine_for_chinook_db(url):
-#     """Pull sql file, populate in-memory database, and create engine."""
-    # url = "https://raw.githubusercontent.com/lerocha/chinook-database/master/ChinookDatabase/DataSources/Chinook_Sqlite.sql"
-    # response = requests.get(url)
-    # sql_script = response.text
-    #
-    # connection = sqlite3.connect(":memory:", check_same_thread=False)
-    # connection.executescript(sql_script)
-    # return create_engine(
-    #     "sqlite://",
-    #     creator=lambda: connection,
-    #     poolclass=StaticPool,
-    #     connect_args={"check_same_thread": False},
-    # )
-
-    # return create_engine(url)
 
 
 # Load environment variables from .env
 load_dotenv()
+pinecone_api_key = os.getenv("PINECONE_API_KEY")
+
 
 # Fetch variables
 USER = os.getenv("user")
@@ -56,9 +45,6 @@ DBNAME = os.getenv("dbname")
 
 # Construct the SQLAlchemy connection string
 DATABASE_URL = f"postgresql+psycopg2://{USER}:{PASSWORD}@{HOST}:{PORT}/{DBNAME}?sslmode=require"
-
-
-# engine = get_engine_for_chinook_db(DATABASE_URL)
 
 engine = create_engine(DATABASE_URL)
 
@@ -75,7 +61,7 @@ db = SQLDatabase(engine)
 
 
 # заголовок
-st.title("Final project hospital chat bot")
+st.title("Final project hospital chat-bot")
 
 # завантаження апі ключа за допомогою streamlit
 api_key = st.secrets.get("GEMINI_API_KEY")
@@ -89,6 +75,32 @@ llm = ChatGoogleGenerativeAI(
 toolkit = SQLDatabaseToolkit(db=db, llm=llm)
 
 listtools = toolkit.get_tools()
+
+# модель для кодування текстів(embedding model)
+embeddings = GoogleGenerativeAIEmbeddings(
+    model="models/gemini-embedding-001",
+    google_api_key=api_key
+)
+
+pc = Pinecone(api_key=pinecone_api_key)
+index_name = "hospital"  # назва бази даних
+
+if not pc.has_index(index_name):
+    pc.create_index(
+        name=index_name,
+        dimension=3072,      # кількість чисел при кодування
+        metric="cosine",    # формула для схожості
+        spec=ServerlessSpec(
+            cloud="aws",         # хмарний сервер(амазон)
+            region="us-east-1"   # регіон(Каліфорнія)
+        ),
+    )
+
+index = pc.Index(index_name)
+vector_store = PineconeVectorStore(
+    index=index,
+    embedding=embeddings
+)
 
 
 def search_doc(user_query: str) -> List[Document]:
@@ -108,7 +120,6 @@ def search_doc(user_query: str) -> List[Document]:
     )
 
     return result_docs
-
 
 
 # створення агента

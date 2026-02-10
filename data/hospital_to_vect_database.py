@@ -160,23 +160,23 @@ vector_store.add_documents(
     ids=ids
 )
 
-# def search_doc(user_query: str) -> List[Document]:
-#     """
-#     Шукає схожі документи з релевантною інформацією до запиту користувача
-#
-#
-#     База даних містить таку інформацію:
-#             * інформація про умови користування гуглом
-#
-#     :param user_query: запит користувача
-#     :return: список документів з релевантною інформацією
-#     """
-#     result_docs = vector_store.similarity_search(
-#         user_query,  # текст для порівняння схожості
-#         k=3,  # кількість документів у відповіді
-#     )
-#
-#     return result_docs
+def search_doc(user_query: str) -> List[Document]:
+    """
+    Шукає схожі документи з релевантною інформацією до запиту користувача
+
+
+    База даних містить таку інформацію:
+            * інформація про умови користування гуглом
+
+    :param user_query: запит користувача
+    :return: список документів з релевантною інформацією
+    """
+    result_docs = vector_store.similarity_search(
+        user_query,  # текст для порівняння схожості
+        k=3,  # кількість документів у відповіді
+    )
+
+    return result_docs
 #
 # # створення агента
 # agent = create_react_agent(
