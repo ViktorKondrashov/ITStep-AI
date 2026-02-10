@@ -62,11 +62,11 @@ DATABASE_URL = f"postgresql+psycopg2://{USER}:{PASSWORD}@{HOST}:{PORT}/{DBNAME}?
 
 engine = create_engine(DATABASE_URL)
 
-try:
-    with engine.connect() as connection:
-        print("Connection successful!")
-except Exception as e:
-    print(f"Failed to connect: {e}")
+# try:
+#     with engine.connect() as connection:
+#         print("Connection successful!")
+# except Exception as e:
+#     print(f"Failed to connect: {e}")
 
 db = SQLDatabase(engine)
 
@@ -82,11 +82,34 @@ api_key = st.secrets.get("GEMINI_API_KEY")
 
 # створити llm
 llm = ChatGoogleGenerativeAI(
-    model='gemini-3-flash',
+    model='gemini-2.5-flash-lite',
     api_key=api_key,
 )
 
 toolkit = SQLDatabaseToolkit(db=db, llm=llm)
+
+listtools = toolkit.get_tools()
+
+
+def search_doc(user_query: str) -> List[Document]:
+    """
+    Шукає схожі документи з релевантною інформацією до запиту користувача
+
+
+    База даних містить таку інформацію:
+            * інформація про умови користування гуглом
+
+    :param user_query: запит користувача
+    :return: список документів з релевантною інформацією
+    """
+    result_docs = vector_store.similarity_search(
+        user_query,  # текст для порівняння схожості
+        k=3,  # кількість документів у відповіді
+    )
+
+    return result_docs
+
+
 
 # створення агента
 agent = create_react_agent(
@@ -104,28 +127,27 @@ if user_query is None:
         SystemMessage(
             """
             Ти -- ввічливий чат бот, який працює с базою даних SQL. Твоя задача давати короткі та
-            чіткі відповіді на питання, а також вносити необхідні зміни у базу. У тебе є доступ до інструментів
-            для роботи з базою даних.
+            чіткі відповіді на питання. У тебе є доступ до інструментів
+            для роботи з базою даних. Нижче інструкція для роботи з нею.
+               You are an agent designed to interact with a SQL database.Given an input question,
+            create a syntactically correct postgresql query to run, then look at the results of the query and return the answer.
+            Unless the user specifies a specific number of examples they wish to obtain, always limit your query to at most 5 results.
+            You can order the results by a relevant column to return the most interesting examples in the database.
+            Never query for all the columns from a specific table, only ask for the relevant columns given the question.
+            You have access to tools for interacting with the database.Only use the below tools.
+            Only use the information returned by the below tools to construct your final answer.
+            You MUST double check your query before executing it. If you get an error while executing a query,
+             rewrite the query and try again.DO NOT make any DML statements (INSERT, UPDATE, DELETE, DROP etc.) to the database.
+             To start you should ALWAYS look at the tables in the database to see what you can query.
+             Do NOT skip this step.Then you should query the schema of the most relevant tables.
+            
             """
         )
     ]
 
-#    You are an agent designed to interact with a SQL database.Given an input question,
-# create a syntactically correct postgresql query to run, then look at the results of the query and return the answer.
-# Unless the user specifies a specific number of examples they wish to obtain, always limit your query to at most 5 results.
-# You can order the results by a relevant column to return the most interesting examples in the database.
-# Never query for all the columns from a specific table, only ask for the relevant columns given the question.
-# You have access to tools for interacting with the database.Only use the below tools.
-# Only use the information returned by the below tools to construct your final answer.
-# You MUST double check your query before executing it. If you get an error while executing a query,
-#  rewrite the query and try again.DO NOT make any DML statements (INSERT, UPDATE, DELETE, DROP etc.) to the database.
-#  To start you should ALWAYS look at the tables in the database to see what you can query.
-#  Do NOT skip this step.Then you should query the schema of the most relevant tables.
-
-
 # якщо повідомлення введено, то дати відповідь від моделі
 if user_query:
-    # переволимо повідомлення в HumanMessage
+    # переводимо повідомлення в HumanMessage
     human_message = HumanMessage(user_query)
 
     # добавляємо до історії повідомлень
